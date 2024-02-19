@@ -13,4 +13,4 @@
     - plan_env:地图部分
     - plan_manage:主体部分，main函数入口(包括launch文件)
     - rosmsg_tcp_bridge:多机通信不用管
-    - traj_utils:可视化、minimum snap部分
+    - traj_utils:可视化、minimum_snap部分
