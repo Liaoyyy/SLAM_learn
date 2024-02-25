@@ -32,4 +32,5 @@ $$
 原理：[双目、结构光、tof，三种深度相机的原理区别](https://www.oakchina.cn/2023/05/16/3_depth_cams/)
 
 ## 图像
-
+OpenCv学习:
+[OpenCv官方文档](https://docs.opencv.org/3.4.11/d9/df8/tutorial_root.html)
