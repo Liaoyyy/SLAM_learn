@@ -1,4 +1,4 @@
-# 视觉里程计1
+# 视觉里程计
 
 ## 特征点法
 *特征点表示图像特征，一般取角点、边缘和区块*
@@ -145,8 +145,94 @@ $$
    T^{\star}=\argmin_{T} \frac{1}{2} \sum_{i=1}^n ||u_i-\frac{1}{s_i}KTP_i||_2^2
    $$
 
-#### 3D-3D：ICP
-   
+#### 3D-3D：ICP(Iterative Closest Point)
+   3D-3D匹配无需相机模型，激光SLAM也会遇到ICP问题
+   1. SVD方法
+      对第i对匹配点，定义误差项
+      $$
+      e_i=p_i-(Rp_i'+t)
+      $$
+      构建最小二乘问题
+      $$
+      \min_{R,t} \frac{1}{2} \sum_{i=1}^n ||p_i-(Rp_i'+t)||_2^2
+      $$
+      设两组点质心为$p,p'$
+      上述优化问题可化简为
+      $$
+      \min_{R,t} J = \frac{1}{2} \sum_{i=1}^n ||p_i-p-R(p_i'-p')||^2+||p-Rp'-t||^2
+      $$
+      求解时由于R,t独立，可先最小化求解第一项得到旋转矩阵R，进而令第二项为0求解得到t
+
+      步骤:
+      1. 求解两组点质心位置${p},{p'}$，然后计算每个点去质心坐标：$q_i=p_i-p,q_i'=p_i'-p$
+      2. 根据以下优化问题求解旋转矩阵
+         $$
+         \begin{align}
+         R^{*} &=\argmin_R \frac{1}{2} \sum_{i=1}^n ||q_i-Rq_i'||^2 \nonumber \\
+          &= \argmin_R \frac{1}{2} \sum_{i=1}^n(q_i^Tq_i+q_i'^{T}R^TRq_i'-2q_i^T R q_i')  \nonumber \\
+          &= \argmin_R \frac{1}{2} \sum_{i=1}^n(q_i^Tq_i+q_i'^{T}q_i'-2q_i^T R q_i')\nonumber
+         \end{align}
+         $$
+         故只需要最小化
+         $$
+         \begin{align}
+         &\argmin_R \sum_{i=1}^n(-q_i^T R q_i') \nonumber \\
+         &= \argmin_R \nonumber (-tr(R\sum_{i=1}^nq_i' q_i^T))
+         \end{align}
+         $$
+      3. 根据上述推到求解t
+         $$
+         t^*=p-Rp'
+         $$
+   2. 非线性优化方法
+      使用李群求导方法
+      $$
+      \min_{\xi} = \frac{1}{2} \sum_{i=1}^n ||(p_i-exp(\hat{\xi})p_i')||_2^2
+      $$
 
 
 ## 直接法
+*特征点法存在一些问题：特征点提取慢(SIFT),忽略了特征点以外所有信息，相机有时会运动到特征缺失的地方*
+**直接法不再计算关键点，而考虑像素的亮度信息估计相机的运动，此外直接法还可以重构稀疏，半稠密，稠密地图，而特征点法只能构建稀疏地图**
+
+### 2D光流
+稀疏光流：仅追踪部分像素的运动轨迹。（典型：Lucas-Kanade光流，LK光流）
+
+#### LK 光流
+- 基本假设(灰度不变假设)：同一空间点的像素灰度值在各个图片中固定不变（这是一个很强的假设，实际可能不成立）
+
+设$t$时刻$(x,y)$点的灰度为$I(x,y,t)$
+在$t+\Delta t$时刻运动到$(x+\Delta x,y+\Delta y)$处，灰度不变，即$I(x+\Delta x,y+\Delta y,t+\Delta t)=I(x,y,t)$
+利用泰勒展开得到
+$$
+I(x+\Delta x,y+\Delta y,t+\Delta t) = I(x,y,t) + \frac{\partial I}{\partial x} dx+ \frac{\partial I}{\partial y} dy+ \frac{\partial I}{\partial t} dt
+$$
+进而可得到
+$$
+\frac{\partial I}{\partial x} \frac{dx}{dt}+ \frac{\partial I}{\partial y} \frac{dy}{dt} = - \frac{\partial I}{\partial t}
+$$
+设$x,y$方向速度为$[u,v]$
+$$
+\begin{bmatrix}
+I_x & I_y
+\end{bmatrix}
+\begin{bmatrix}
+u \\ v
+\end{bmatrix}
+= -I_t
+$$
+**对于一个小窗口$w \times w$内像素点可认为具有相同的运动，即可得到$w^2$个方程，再利用最小二乘法得到结果**
+$$
+A=
+\begin{bmatrix}
+[I_x & I_y]_1 \\
+... & ...\\
+[I_x & I_y]_k \\
+\end{bmatrix} \\
+$$
+
+$$
+\begin{bmatrix}
+u \\ v
+\end{bmatrix} = -(A^TA)^{-1} A^T b
+$$

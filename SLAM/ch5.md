@@ -34,3 +34,6 @@ $$
 ## 图像
 OpenCv学习:
 [OpenCv官方文档](https://docs.opencv.org/3.4.11/d9/df8/tutorial_root.html)
+
+OpenCV访问点:
+[访问Mat某个像素点](https://blog.csdn.net/qq_42731705/article/details/121522770)
