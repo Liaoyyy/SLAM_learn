@@ -14,6 +14,87 @@ z_k = C_k x_k + v_k
 $$
 其中$x_k$为$k$时刻状态向量，$u_k$为输入，$z_k$为观测器观测值，$w_k,v_k$为服从零均值高斯分布的随机噪声
 
+## BA与图优化
+可认为像素坐标系下目标特征点的坐标为特征点在世界坐标系下坐标的观测值，记观测值$z=h(T,p)$，其中$T$为特征点从世界坐标系到相机坐标系的齐次变换矩阵，$p$为特征点在空间中坐标。
+定义观测误差
+$$
+e=z-h(T,p)
+$$
+代价函数为
+$$
+\frac{1}{2}\sum^m_{i=1}\sum^n_{j=1}||e_{ij}||^2=\frac{1}{2}\sum^m_{i=1}\sum^n_{j=1}||z_{ij}-h(T_i,p_j)||^2
+$$
+其中，$z_{ij}$表示在位姿$T_i$处观察路(特征点)$p_j$的观测值
+将自变量定义为所有待优化的变量
+$$
+x=[T_1,...,T_m,p_1,....,p_n]^T
+$$
+雅可比矩阵可分块为
+$$
+J=[F,E] \\
+J=\begin{bmatrix} J_{11} \\ J{12} \\... \\ J_{ij}\end{bmatrix}
+$$
+其中，$F$为代价函数对相机姿态导数，$E$为代价函数对路标的偏导
+由高斯牛顿法可得到
+$$
+H=J^TJ=
+\begin{bmatrix}
+F^TF & F^TE \\
+E^TF & E^TE
+\end{bmatrix}
+$$
+对多个姿态、目标点优化情况可以将$H$记为
+$$
+H=\sum_{i,j}J_{ij}^TJ_{ij}
+$$
+**矩阵H是具有稀疏性质的矩阵**
+将$H$记为
+$$
+H=
+\begin{bmatrix}
+B & E \\
+E^T & C
+\end{bmatrix}
+$$
+其中，$B$只和相机位姿有关，$C$仅和路标点有关
+增量方程为
+$$
+\begin{bmatrix}
+B & E \\
+E^T & C
+\end{bmatrix}
+\begin{bmatrix}
+\Delta x_c \\ \Delta x_p
+\end{bmatrix}=
+\begin{bmatrix}
+v \\ w
+\end{bmatrix}
+$$
+**舒尔消元(Schur消元或Marginalization)：**
+对上式方程左乘矩阵
+$$
+\begin{bmatrix}
+I & -EC^{-1} \\
+0 & I
+\end{bmatrix}
+$$
+整理得到
+$$
+\begin{bmatrix}
+B-EC^{-1}E^T & 0 \\
+E^T & C
+\end{bmatrix}
+\begin{bmatrix}
+\Delta x_c \\ \Delta x_p
+\end{bmatrix}=
+\begin{bmatrix}
+v-EC^{-1}w \\ w
+\end{bmatrix}
+$$
+
+*对舒尔消元理解:*
+舒尔消元可视为一种边缘化，即求$\Delta x_c， \Delta x_p$问题化为先固定$\Delta x_p$，求解$\Delta x_c$，再求$\Delta x_p$
+
 ## 滑动窗口滤波与优化
 *单纯BA随着时间推移规模会越来越大，路标点越来越多，考虑仅保留离当前时刻最近的N个关键帧的数据或类似思路的有限个关键帧*
 
